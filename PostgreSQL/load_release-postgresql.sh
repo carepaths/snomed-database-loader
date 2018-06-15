@@ -6,6 +6,7 @@ basedir="$(pwd)"
 releasePath=$1
 dbName=$2
 loadType=$3
+locale=$4 
 
 if [ -z ${loadType} ]
 then
@@ -74,6 +75,7 @@ function addLoadScript() {
 	for fileType in ${fileTypes[@]}; do
 		fileName=${1/TYPE/${fileType}}
 		fileName=${fileName/DATE/${releaseDate}}
+		fileName=${fileName/INT/${locale}}
 
 		#Check file exists - try beta version if not
 		if [ ! -f ${localExtract}/${fileName} ]; then
@@ -94,6 +96,30 @@ function addLoadScript() {
 	done
 }
 
+function addMapScript() {
+	for fileType in ${fileTypes[@]}; do
+		fileName=${1/TYPE/${fileType}}
+		fileName=${fileName/DATE/${releaseDate}}
+		fileName=${fileName/INT/${locale}}
+
+		#Check file exists - try beta version if not
+		if [ ! -f ${localExtract}/${fileName} ]; then
+			origFilename=${fileName}
+			fileName="x${fileName}"
+			if [ ! -f ${localExtract}/${fileName} ]; then
+				echo "Unable to find ${origFilename} or beta version"
+				exit -1
+			fi
+		fi
+
+		tableName=${2}_`echo $fileType | head -c 1 | tr '[:upper:]' '[:lower:]'`
+
+		echo -e "COPY ${tableName}" >> ${generatedLoadScript}
+		echo -e "FROM '"${basedir}/${localExtract}/${fileName}"'" >> ${generatedLoadScript}
+		echo -e "WITH (FORMAT csv, HEADER true, DELIMITER E'\t');" >> ${generatedLoadScript}
+		echo -e ""  >> ${generatedLoadScript}
+	done
+}
 echo -e "\nGenerating loading script for $releaseDate"
 echo "/* Generated Loader Script */" >  ${generatedLoadScript}
 echo "" >> ${generatedLoadScript}
@@ -107,8 +133,9 @@ addLoadScript sct2_TextDefinition_TYPE-en_INT_DATE.txt textdefinition
 addLoadScript der2_cRefset_AttributeValueTYPE_INT_DATE.txt attributevaluerefset
 addLoadScript der2_cRefset_LanguageTYPE-en_INT_DATE.txt langrefset
 addLoadScript der2_cRefset_AssociationTYPE_INT_DATE.txt associationrefset
-
-psql -U ${dbUsername} -p ${dbPortNumber} -d ${dbName} << EOF
+addMapScript tls_Icd10cmHumanReadableMap_INT_DATE.tsv icd10cm_human_readable_map
+addLoadScript der2_iisssccRefset_ExtendedMapActiveSnapshot_INT_DATE.txt icd10_extendedmapactivesnapshot_map
+psql_camp -U ${dbUsername} -p ${dbPortNumber} -d ${dbName} << EOF
 	\ir create-database-postgres.sql;
 	\ir environment-postgresql.sql;
 	\ir ${generatedLoadScript};
