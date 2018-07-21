@@ -202,3 +202,18 @@ create table icd10_extendedmapactivesnapshot_map_s(
   mapCategoryId varchar(18),
   PRIMARY KEY(id, effectivetime)
 );
+
+drop table if exists mental_health_subset_with_icd10_map_s cascade;
+create table mental_health_subset_with_icd10_map_s(
+  parent_sctid varchar(25),
+  parent_sctid_2 varchar(25),
+  parent_sctid_3 varchar(25),
+  concept_sctid varchar(25),
+  fsn text,
+  pref_term text,
+  kp_clinician_display_name text,
+  icd9_cm varchar(25),
+  icd10_cm text,
+  kp_patient_display_name text
+
+);

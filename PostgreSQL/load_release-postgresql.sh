@@ -8,9 +8,9 @@ dbName=$2
 loadType=$3
 locale=$4 
 
-if [ -z ${loadType} ]
+if [ -z ${loadType} ] || [ -z ${locale} ]
 then
-	echo "Usage <release location> <db schema name> <DELTA|SNAP|FULL|ALL>"
+	echo "Usage <release location> <db schema name> <DELTA|SNAP|FULL|ALL> <locale ie US1000124>"
 	exit -1
 fi
 
@@ -56,7 +56,7 @@ esac
 
 	
 #Determine the release date from the filenames
-releaseDate=`ls -1 ${localExtract}/*.txt | head -1 | egrep -o '[0-9]{8}'`	
+releaseDate=`ls -r -1 ${localExtract}/*.txt | head -1 | egrep -o '[0-9]{8}'`	
 
 #Generate the environemnt script by running through the template as 
 #many times as required
@@ -96,12 +96,35 @@ function addLoadScript() {
 	done
 }
 
+function addSubsetScript() {
+	for fileType in ${fileTypes[@]}; do
+		fileName=${1/TYPE/${fileType}}
+		fileName=${fileName/DATE/${releaseDate}}
+		fileName=${fileName/INT/${locale}}
+    echo $fileName
+		#Check file exists - try beta version if not
+		if [ ! -f ${localExtract}/${fileName} ]; then
+			origFilename=${fileName}
+			fileName="x${fileName}"
+			if [ ! -f ${localExtract}/${fileName} ]; then
+				echo "Unable to find ${origFilename} or beta version"
+				exit -1
+			fi
+		fi
+
+		tableName=${2}_`echo $fileType | head -c 1 | tr '[:upper:]' '[:lower:]'`
+
+		echo -e "COPY ${tableName}" >> ${generatedLoadScript}
+		echo -e "FROM '"${basedir}/${localExtract}/${fileName}"'" >> ${generatedLoadScript}
+		echo -e "WITH (FORMAT csv, HEADER true);" >> ${generatedLoadScript}
+		echo -e ""  >> ${generatedLoadScript}
+	done
+}
 function addMapScript() {
 	for fileType in ${fileTypes[@]}; do
 		fileName=${1/TYPE/${fileType}}
 		fileName=${fileName/DATE/${releaseDate}}
 		fileName=${fileName/INT/${locale}}
-
 		#Check file exists - try beta version if not
 		if [ ! -f ${localExtract}/${fileName} ]; then
 			origFilename=${fileName}
@@ -135,6 +158,10 @@ addLoadScript der2_cRefset_LanguageTYPE-en_INT_DATE.txt langrefset
 addLoadScript der2_cRefset_AssociationTYPE_INT_DATE.txt associationrefset
 addMapScript tls_Icd10cmHumanReadableMap_INT_DATE.tsv icd10cm_human_readable_map
 addLoadScript der2_iisssccRefset_ExtendedMapActiveSnapshot_INT_DATE.txt icd10_extendedmapactivesnapshot_map
+
+# Load additional mental health subset
+addSubsetScript der1_SubsetMembersTable_1000119_20160226.txt mental_health_subset_with_icd10_map
+
 psql_camp -U ${dbUsername} -p ${dbPortNumber} -d ${dbName} << EOF
 	\ir create-database-postgres.sql;
 	\ir environment-postgresql.sql;

@@ -10,3 +10,12 @@ Please see the relevant sub-directories for each of the different database load 
 - [PostgreSQL](PostgreSQL/)
 
 If you have any scripts for other databases, please fork this repository and create the pull request to submit any contributions.
+
+
+
+
+BG NOTES:
+
+I have added the icd10 map table and the mental healt subsets. 
+
+Need to run import script with ....
