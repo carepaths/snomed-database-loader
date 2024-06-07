@@ -54,6 +54,9 @@ case "${loadType}" in
 	;;
 esac
 
+cp $basedir/../*.tsv ${localExtract}
+cp $basedir/../*.txt ${localExtract}
+
 	
 #Determine the release date from the filenames
 releaseDate=`ls -r -1 ${localExtract}/*.txt | head -1 | egrep -o '[0-9]{8}'`	
@@ -87,7 +90,9 @@ function addLoadScript() {
 			fi
 		fi
 
-		tableName=${2}_`echo $fileType | head -c 1 | tr '[:upper:]' '[:lower:]'`
+#		tableName=${2}_`echo $fileType | head -c 1 | tr '[:upper:]' '[:lower:]'`
+# we are using as snapshot, even tough we are doing a full release
+		tableName=${2}_s
 
 		echo -e "COPY ${tableName}" >> ${generatedLoadScript}
 		echo -e "FROM '"${basedir}/${localExtract}/${fileName}"'" >> ${generatedLoadScript}
@@ -112,7 +117,9 @@ function addSubsetScript() {
 			fi
 		fi
 
-		tableName=${2}_`echo $fileType | head -c 1 | tr '[:upper:]' '[:lower:]'`
+# 		tableName=${2}_`echo $fileType | head -c 1 | tr '[:upper:]' '[:lower:]'`
+# we are using as snapshot, even tough we are doing a full release
+		tableName=${2}_s
 
 		echo -e "COPY ${tableName}" >> ${generatedLoadScript}
 		echo -e "FROM '"${basedir}/${localExtract}/${fileName}"'" >> ${generatedLoadScript}
@@ -135,7 +142,9 @@ function addMapScript() {
 			fi
 		fi
 
-		tableName=${2}_`echo $fileType | head -c 1 | tr '[:upper:]' '[:lower:]'`
+# 		tableName=${2}_`echo $fileType | head -c 1 | tr '[:upper:]' '[:lower:]'`
+# we are using as snapshot, even tough we are doing a full release
+		tableName=${2}_s
 
 		echo -e "COPY ${tableName}" >> ${generatedLoadScript}
 		echo -e "FROM '"${basedir}/${localExtract}/${fileName}"'" >> ${generatedLoadScript}
@@ -162,11 +171,13 @@ addLoadScript der2_iisssccRefset_ExtendedMapActiveSnapshot_INT_DATE.txt icd10_ex
 # Load additional mental health subset
 addSubsetScript der1_SubsetMembersTable_1000119_20160226.txt mental_health_subset_with_icd10_map
 
-psql_camp -U ${dbUsername} -p ${dbPortNumber} -d ${dbName} << EOF
+#psql_camp -U ${dbUsername} -p ${dbPortNumber} -d ${dbName} << EOF
+psql -U ${dbUsername} -p ${dbPortNumber} -d ${dbName} << EOF
 	\ir create-database-postgres.sql;
 	\ir environment-postgresql.sql;
 	\ir ${generatedLoadScript};
 EOF
 
 rm -rf $localExtract
-#We'll leave the generated environment & load scripts for inspection
+
+

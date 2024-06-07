@@ -1,12 +1,3 @@
-# 20180614 BRG
-Made some modification to import SNAP(shot) data and the ICD10 map
-Need to add the IDC10 map files to the .zip archive: 
-zip -u Snomed.zip Snap/*.csv/tsv
-
-Also need to add a param for the INT locale
-
-For production, change psql_camp to psql for running the imports
-
 # SNOMED CT DATABASE
 
 PostgreSQL SQL Scripts to create and populate a PostgreSQL database with a SNOMED CT terminology release.
